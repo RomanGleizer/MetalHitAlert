@@ -5,7 +5,6 @@ import librosa.display
 import matplotlib.pyplot as plt
 
 def load_audio_files(directory):
-    """Рекурсивно загружает MP3-файлы и возвращает их характеристики."""
     file_names = []
     audios = []
     sampling_rates = []
@@ -24,7 +23,6 @@ def load_audio_files(directory):
     return file_names, audios, sampling_rates
 
 def plot_audio(data, sr, title="Аудиосигнал"):
-    """Визуализация волновой формы сигнала."""
     plt.figure(figsize=(14, 5))
     librosa.display.waveshow(data, sr=sr)
     plt.title(title)
@@ -33,7 +31,6 @@ def plot_audio(data, sr, title="Аудиосигнал"):
     plt.show()
 
 def extract_features_deep(audio, sr):
-    """Извлекает расширенный набор аудио-признаков."""
     features = {}
     
     spec_centroid = librosa.feature.spectral_centroid(y=audio, sr=sr)
@@ -65,7 +62,6 @@ def extract_features_deep(audio, sr):
     return features
 
 def predict_sound_deep(features):
-    """Улучшенная эвристическая модель классификации."""
     score = 0
 
     if features['spectral_centroid_mean'] > 3500:
@@ -76,17 +72,24 @@ def predict_sound_deep(features):
         score += 1
     if np.mean(features['spectral_contrast_mean']) > 15:
         score += 1
-
     if features['mfcc_mean'][0] > -300:
         score += 1
     if features['mfcc_mean'][1] > 100:
         score += 1
-    
+
+    if features['mfcc_mean'][0] > -250:
+        score -= 1
+    if features['zero_crossing_rate'] < 0.1:
+        score -= 1
+    if features['mfcc_std'][0] < 30:
+        score -= 1
+    if features['spectral_centroid_std'] < 500:
+        score -= 1
+
     print(f"  Композитный скор: {score}")
     return "Тревога" if score >= 3 else "Дорожные работы"
 
 def print_deep_features(features):
-    """Выводит все вычисленные признаки с новыми полями."""
     print("Вычисленные признаки:")
     print(f"  Спектральный центр (среднее): {features['spectral_centroid_mean']:.2f}")
     print(f"  Спектральный центр (STD): {features['spectral_centroid_std']:.2f}")
@@ -135,6 +138,8 @@ def main():
         prediction = predict_sound_deep(features)
         print(f"Результат анализа: {prediction}")
         print("Сигнал тревоги!" if prediction == "Тревога" else "Всё в порядке.")
+        
+        plot_audio(audio, sr, title=f"Вейвформа: {os.path.basename(file_path)}")
 
 if __name__ == "__main__":
     main()
